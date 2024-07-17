@@ -1,51 +1,89 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Component, OnInit } from '@angular/core';
-import { randText } from '@ngneat/falso';
+import { Component, OnInit, inject } from '@angular/core';
+import { LoaderComponent } from './loader.component';
+import { ApiService, ToDo } from './shared/services/api.service';
 
 @Component({
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, LoaderComponent],
   selector: 'app-root',
   template: `
-    <div *ngFor="let todo of todos">
-      {{ todo.title }}
-      <button (click)="update(todo)">Update</button>
-    </div>
+    @if (loading) {
+      <app-loader></app-loader>
+    } @else {
+      @for (todo of todos; track $index) {
+        <div>
+          {{ todo.title }}
+          <button (click)="update(todo)">Update</button>
+          <button (click)="delete(todo)">Delete</button>
+        </div>
+      }
+      @if (errorMessage) {
+        <div>{{ errorMessage }}</div>
+      }
+    }
   `,
   styles: [],
 })
 export class AppComponent implements OnInit {
-  todos!: any[];
-
-  constructor(private http: HttpClient) {}
+  todos!: ToDo[];
+  http = inject(HttpClient);
+  apiService = inject(ApiService);
+  errorMessage = '';
+  loading = false;
 
   ngOnInit(): void {
-    this.http
-      .get<any[]>('https://jsonplaceholder.typicode.com/todos')
-      .subscribe((todos) => {
-        this.todos = todos;
-      });
+    this.fetchTodos();
   }
 
-  update(todo: any) {
-    this.http
-      .put<any>(
-        `https://jsonplaceholder.typicode.com/todos/${todo.id}`,
-        JSON.stringify({
-          todo: todo.id,
-          title: randText(),
-          body: todo.body,
-          userId: todo.userId,
-        }),
-        {
-          headers: {
-            'Content-type': 'application/json; charset=UTF-8',
-          },
-        },
-      )
-      .subscribe((todoUpdated: any) => {
-        this.todos[todoUpdated.id - 1] = todoUpdated;
-      });
+  fetchTodos(): void {
+    this.loading = true;
+    this.apiService.getTodos().subscribe({
+      next: (todos) => {
+        this.todos = todos;
+        this.loading = false;
+      },
+      error: (err) => {
+        this.handleError(err);
+        this.loading = false;
+      },
+    });
+  }
+
+  update(todo: ToDo) {
+    this.loading = true;
+
+    this.apiService.updateTodo(todo).subscribe({
+      next: (todoUpdated) => {
+        this.todos = this.todos.map((t) =>
+          t.id === todoUpdated.id ? todoUpdated : t,
+        );
+        this.loading = false;
+      },
+      error: (err) => {
+        this.handleError(err);
+        this.loading = false;
+      },
+    });
+  }
+
+  delete(todo: ToDo) {
+    this.loading = true;
+    this.apiService.deleteToDo(todo).subscribe({
+      next: () => {
+        this.todos = this.todos.filter((t) => t.id !== todo.id);
+        this.loading = false;
+      },
+      error: (err) => {
+        this.handleError(err);
+        this.loading = false;
+      },
+    });
+  }
+
+  private handleError(error: Error) {
+    this.errorMessage = error.message;
+    console.error('An error occurred:', error);
   }
 }
