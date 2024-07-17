@@ -12,21 +12,11 @@ import { ListItemComponent } from '../list-item/list-item.component';
     <div
       class="flex w-fit flex-col gap-3 rounded-md border-2 border-black p-4"
       [class]="customClass">
-      <img
-        *ngIf="type === CardType.TEACHER"
-        src="assets/img/teacher.png"
-        width="200px" />
-      <img
-        *ngIf="type === CardType.STUDENT"
-        src="assets/img/student.webp"
-        width="200px" />
-
+      <ng-content></ng-content>
       <section>
-        <app-list-item
-          *ngFor="let item of list"
-          [name]="item.firstName"
-          [id]="item.id"
-          [type]="type"></app-list-item>
+        @for (item of list; track $index) {
+          <app-list-item [item]="item" [type]="type"></app-list-item>
+        }
       </section>
 
       <button
@@ -43,8 +33,6 @@ export class CardComponent {
   @Input() list: any[] | null = null;
   @Input() type!: CardType;
   @Input() customClass = '';
-
-  CardType = CardType;
 
   constructor(
     private teacherStore: TeacherStore,
