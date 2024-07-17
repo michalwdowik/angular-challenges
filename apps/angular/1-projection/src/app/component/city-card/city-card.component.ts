@@ -7,11 +7,7 @@ import { CardComponent } from '../../ui/card/card.component';
 
 @Component({
   selector: 'app-city-card',
-  template: `
-    <app-card [type]="cardType" [list]="cities">
-      <img src="assets/img/city.png" width="200px" />
-    </app-card>
-  `,
+  template: ``,
   standalone: true,
   imports: [CardComponent],
 })
@@ -28,6 +24,5 @@ export class CityCardComponent implements OnInit {
     this.http.fetchCities$.subscribe((c) => this.store.addAll(c));
 
     this.store.cities$.subscribe((c) => (this.cities = c));
-    console.log(this.cities);
   }
 }
